@@ -177,7 +177,7 @@ class OutsideLight(LightEntity):
                 brightness_override=self._brightness_override,
             )
         else:
-            await self._rightlightnear.turn_off()
+            await self._rightlightnear.disable_and_turn_off()
 
     @property
     def should_poll(self):
