@@ -149,6 +149,10 @@ class OutsideLight(LightEntity):
 
         self.async_schedule_update_ha_state(force_refresh=True)
 
+        event.async_track_state_change_event(
+            self.hass, light_entity_near, self.near_update
+        )
+
         # Not working.  Light starts up an sends None=>Off, Off=>Off, Off=>On, but not sure if that's always the case
         # event.async_track_state_change_event(self.hass, self._light, self.light_update)
 
@@ -161,6 +165,19 @@ class OutsideLight(LightEntity):
             self.harmony_on = True
         else:
             self.harmony_on = False
+
+    @callback
+    async def near_update(self, this_event):
+        """Handle adding/removing near group from rightlight separately"""
+        ev = this_event.as_dict()
+        ns = ev["data"]["new_state"].state
+        if ns == "on":
+            await self._rightlightnear.turn_on(
+                brightness=self._brightness,
+                brightness_override=self._brightness_override,
+            )
+        else:
+            await self._rightlightnear.turn_off()
 
     @property
     def should_poll(self):
