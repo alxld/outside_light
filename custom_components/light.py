@@ -48,14 +48,15 @@ from . import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-light_entity = "light.dining_room_group"
+light_entity = "light.outside_group"
+light_entity_near = "light.outside_near_group"
 # harmony_entity = "remote.theater_harmony_hub"
-switch_action = "zigbee2mqtt/Dining Room Switch/action"
-motion_sensor_action = "zigbee2mqtt/Dining Room Motion Sensor"
+switch_action = "zigbee2mqtt/Outside Switch/action"
+# motion_sensor_action = "zigbee2mqtt/Outside Motion Sensor"
 brightness_step = 43
 motion_sensor_brightness = 192
 has_harmony = False
-has_motion_sensor = True
+has_motion_sensor = False
 has_switch = True
 
 
@@ -69,7 +70,7 @@ async def async_setup_platform(
     # We only want this platform to be set up via discovery.
     if discovery_info is None:
         return
-    ent = DiningRoomLight()
+    ent = OutsideLight()
     add_entities([ent])
 
     @callback
@@ -94,13 +95,14 @@ async def async_setup_platform(
         )
 
 
-class DiningRoomLight(LightEntity):
-    """Dining Room Light."""
+class OutsideLight(LightEntity):
+    """Outside Light."""
 
     def __init__(self) -> None:
-        """Initialize Dining Room Light."""
+        """Initialize Outside Light."""
         self._light = light_entity
-        self._name = "Dining Room"
+        self._light_near = light_entity_near
+        self._name = "Outside"
         # self._state = 'off'
         self._brightness = 0
         self._brightness_override = 0
@@ -136,6 +138,7 @@ class DiningRoomLight(LightEntity):
     async def async_added_to_hass(self) -> None:
         """Instantiate RightLight"""
         self._rightlight = RightLight(self._light, self.hass)
+        self._rightlightnear = RightLight(self._light_near, self.hass)
 
         #        #temp = self.hass.states.get(harmony_entity).new_state
         #        #_LOGGER.error(f"Harmony state: {temp}")
@@ -301,8 +304,13 @@ class DiningRoomLight(LightEntity):
                 brightness=self._brightness,
                 brightness_override=self._brightness_override,
             )
+            await self._rightlightnear.turn_on(
+                brightness=self._brightness,
+                brightness_override=self._brightness_override,
+            )
         else:
             await self._rightlight.turn_on_specific(data)
+            await self._rightlightnear.turn_on_specific(data)
 
         self.async_schedule_update_ha_state(force_refresh=True)
 
@@ -312,6 +320,7 @@ class DiningRoomLight(LightEntity):
         self._brightness = 255
         self.switched_on = True
         await self._rightlight.turn_on(mode=self._mode)
+        await self._rightlightnear.turn_on(mode=self._mode)
         self.async_schedule_update_ha_state(force_refresh=True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -321,6 +330,7 @@ class DiningRoomLight(LightEntity):
         self._is_on = False
         self.switched_on = False
         await self._rightlight.disable_and_turn_off()
+        await self._rightlightnear.disable_and_turn_off()
         self.async_schedule_update_ha_state(force_refresh=True)
 
     async def up_brightness(self, **kwargs) -> None:
